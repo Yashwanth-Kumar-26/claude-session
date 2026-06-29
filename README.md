@@ -17,12 +17,12 @@ Dependencies: `bash` 4+, `jq`, `claude` CLI.
 ### Any OS (Node.js 18+)
 
 ```bash
-# Run directly with npx (no install needed)
-npx github:Yashwanth-Kumar-26/claude-session
-
-# Or install globally
-npm install -g https://github.com/Yashwanth-Kumar-26/claude-session
+# Install globally (package: csessions, command: claude-sessions)
+npm install -g csessions
 claude-sessions --all
+
+# Or run directly with npx (no install needed)
+npx github:Yashwanth-Kumar-26/claude-session
 ```
 
 Zero dependencies — uses only Node.js built-in `fs`, `path`, `os`, `readline`.
