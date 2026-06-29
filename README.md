@@ -14,6 +14,19 @@ sudo chmod +x /usr/local/bin/claude-sessions
 
 Dependencies: `bash` 4+, `jq`, `claude` CLI.
 
+### Any OS (Node.js 18+)
+
+```bash
+# Run directly with npx (no install needed)
+npx github:Yashwanth-Kumar-26/claude-session
+
+# Or install globally
+npm install -g https://github.com/Yashwanth-Kumar-26/claude-session
+claude-sessions --all
+```
+
+Zero dependencies — uses only Node.js built-in `fs`, `path`, `os`, `readline`.
+
 ### Windows (PowerShell 5.1+)
 
 ```powershell
@@ -29,6 +42,16 @@ curl -Lo "$dir\claude-sessions.ps1" `
 ```
 
 Dependencies: `claude` CLI in PATH (no `jq` needed — uses native `ConvertFrom-Json`).
+
+## Versions
+
+| File | Language | Platform | Deps |
+|------|----------|----------|------|
+| `claude-sessions` | Bash | Linux / macOS / WSL | `jq` |
+| `claude-sessions.ps1` | PowerShell | Windows | none (native) |
+| `claude-sessions.js` | Node.js | Windows / macOS / Linux | none (built-ins) |
+
+All three share the same features, flags, and interactive picker.
 
 ## Usage
 
@@ -46,6 +69,21 @@ On Windows:
 .\claude-sessions.ps1 -All
 .\claude-sessions.ps1 -All -WithMem
 .\claude-sessions.ps1 -Filter deploy
+```
+
+Node.js (any OS):
+
+```
+node claude-sessions.js
+node claude-sessions.js --all
+node claude-sessions.js --with-mem
+node claude-sessions.js deploy
+```
+
+Or via `npx` (no download needed):
+
+```
+npx github:Yashwanth-Kumar-26/claude-session
 ```
 
 Pick a session by **number**, paste a **full UUID**, or type a **partial UUID prefix** (e.g. `07947d09` is enough). The tool runs `claude --resume <uuid>` and drops you right back into that session.

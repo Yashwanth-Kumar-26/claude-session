@@ -1,0 +1,17 @@
+{
+  "name": "claude-sessions",
+  "version": "1.0.0",
+  "description": "Browse and resume Claude Code CLI sessions — zero-dependency cross-platform CLI",
+  "bin": {
+    "claude-sessions": "./claude-sessions.js"
+  },
+  "files": [
+    "claude-sessions",
+    "claude-sessions.js",
+    "claude-sessions.ps1"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "license": "MIT"
+}
