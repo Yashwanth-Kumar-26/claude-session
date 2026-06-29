@@ -1,0 +1,267 @@
+#!/usr/bin/env bash
+# claude-sessions — browse & resume Claude Code CLI sessions
+set -euo pipefail
+
+if [[ -t 1 ]]; then
+  RED=$'\033[0;31m'; GREEN=$'\033[0;32m'; YELLOW=$'\033[1;33m'
+  CYAN=$'\033[0;36m'; BOLD=$'\033[1m'; DIM=$'\033[2m'; RESET=$'\033[0m'
+else
+  RED=''; GREEN=''; YELLOW=''; CYAN=''; BOLD=''; DIM=''; RESET=''
+fi
+
+die() { echo -e "${RED}error:${RESET} $*" >&2; exit 1; }
+need() { command -v "$1" &>/dev/null || die "'$1' required: sudo apt install $1"; }
+is_uuid() { [[ "$1" =~ ^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$ ]]; }
+
+INTERNAL_PROJECT_RE='mem-observer|mem_observer|memory-observer|memory_observer'
+INTERNAL_LABEL_RE='^(You are a Claude-Mem|Hello memory agent|claude-mem|knowledge-agent)'
+
+is_noise() {
+  [[ "$1" =~ $INTERNAL_PROJECT_RE ]] && return 0
+  [[ "$2" =~ $INTERNAL_LABEL_RE ]] && return 0
+  return 1
+}
+
+# --- discover all .claude/projects dirs ---
+claude_project_dirs() {
+  local seen=()
+  local -a dirs=()
+  local d
+
+  # env override
+  if [[ -n "${CLAUDE_PROJECTS_DIR:-}" && -d "$CLAUDE_PROJECTS_DIR" ]]; then
+    echo "$CLAUDE_PROJECTS_DIR"; return
+  fi
+
+  # $HOME
+  if [[ -d "$HOME/.claude/projects" ]]; then
+    seen+=("$HOME/.claude/projects"); dirs+=("$HOME/.claude/projects")
+  fi
+
+  # /home/* — handles multi-user (glitch runs but sessions live under /home/siddu)
+  for d in /home/*/.claude/projects; do
+    [[ -d "$d" ]] || continue
+    local dup=0
+    for s in "${seen[@]}"; do [[ "$s" == "$d" ]] && { dup=1; break; }; done
+    ((dup)) && continue
+    seen+=("$d"); dirs+=("$d")
+  done
+
+  # /root
+  if [[ -d /root/.claude/projects ]]; then
+    local dup=0
+    for s in "${seen[@]}"; do [[ "$s" == /root/.claude/projects ]] && { dup=1; break; }; done
+    ((dup)) || dirs+=(/root/.claude/projects)
+  fi
+
+  ((${#dirs[@]})) || die "No .claude/projects/ found (checked \$HOME, /home/*, /root)"
+  printf '%s\n' "${dirs[@]}"
+}
+
+# --- encode $PWD to claude's folder naming (non-alnum → '-', case-preserving) ---
+encode_path() {
+  echo "$1" | sed 's/[^a-zA-Z0-9]/-/g'
+}
+
+# --- find project dir matching cwd ---
+find_project_dir() {
+  local encoded; encoded=$(encode_path "$1")
+  while IFS= read -r base; do
+    local candidate="$base/$encoded"
+    [[ -d "$candidate" ]] && { echo "$candidate"; return; }
+  done < <(claude_project_dirs)
+  echo ""
+}
+
+# --- human time ---
+time_ago() {
+  local diff=$(( $(date +%s) - ${1%.*} ))
+  if   (( diff < 60    )); then echo "${diff}s"
+  elif (( diff < 3600  )); then echo "$(( diff/60 ))m"
+  elif (( diff < 86400 )); then echo "$(( diff/3600 ))h $(( (diff%3600)/60 ))m"
+  else                         echo "$(( diff/86400 ))d"
+  fi
+}
+
+# --- best label for a session ---
+session_label() {
+  local f="$1" sid index_file label first_line
+  sid=$(basename "$f" .jsonl)
+  index_file="$(dirname "$f")/sessions-index.json"
+
+  # try sessions-index.json first
+  if [[ -f "$index_file" ]]; then
+    label=$(jq -r --arg id "$sid" '
+      (if type == "object" and has("sessions") then .sessions else . end)
+      | to_entries[]
+      | select(.key == $id)
+      | .value.summary // .value.name // ""
+    ' "$index_file" 2>/dev/null | head -1)
+    [[ -n "$label" && "$label" != "null" ]] && { echo "$label"; return; }
+  fi
+
+  # fallback: first user message as label
+  first_line=$(grep -m1 '"role":"user"' "$f" 2>/dev/null \
+    | jq -r '(.content // [] | if type=="array" then map(if .type=="text" then .text else empty end) | join(" ") else . end)' \
+    2>/dev/null | head -c 120 | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+  [[ -n "$first_line" && "$first_line" != "null" ]] && { echo "${first_line:0:100}…"; return; }
+
+  # another fallback: lastPrompt field (some JSONL formats)
+  first_line=$(grep -m1 '"lastPrompt"' "$f" 2>/dev/null \
+    | jq -r '.lastPrompt // ""' 2>/dev/null | head -c 120 | tr '\n' ' ' | sed 's/[[:space:]]*$//')
+  [[ -n "$first_line" && "$first_line" != "null" ]] && { echo "${first_line:0:100}…"; return; }
+
+  echo "(no summary)"
+}
+
+# --- collect sessions from one project dir ---
+SESSION_IDS=()
+GLOBAL_COUNT=0
+
+list_dir() {
+  local proj_dir="$1" filter="${2:-}" show_proj="${3:-false}" hide_noise="${4:-true}"
+  local proj_name; proj_name=$(basename "$proj_dir")
+
+  local files=()
+  while IFS= read -r f; do
+    is_uuid "$(basename "$f" .jsonl)" && files+=("$f")
+  done < <(find "$proj_dir" -maxdepth 1 -name '*.jsonl' -type f 2>/dev/null \
+           | xargs ls -t 2>/dev/null || true)
+
+  for f in "${files[@]:-}"; do
+    [[ -z "${f:-}" ]] && continue
+    local sid; sid=$(basename "$f" .jsonl)
+    local mtime; mtime=$(stat -c %Y "$f" 2>/dev/null || echo 0)
+    local label; label=$(session_label "$f")
+
+    [[ "$hide_noise" == "true" ]] && is_noise "$proj_name" "$label" && continue
+    [[ -n "$filter" ]] && { echo "$label $sid" | grep -qi "$filter" || continue; }
+
+    GLOBAL_COUNT=$(( GLOBAL_COUNT + 1 ))
+    SESSION_IDS+=("$sid")
+
+    local tail_pad=""
+    [[ "$show_proj" == "true" ]] && tail_pad=" ${DIM}[${proj_name}]${RESET}"
+
+    # label fits first line; wrap if needed
+    printf "${CYAN}%3d${RESET}  ${BOLD}%-72s${RESET}%s\n" \
+      "$GLOBAL_COUNT" "${label:0:72}" "$tail_pad"
+    printf "     ${DIM}%s  •  %s${RESET}\n" "$sid" "$(time_ago "$mtime")"
+  done
+}
+
+# --- interactive picker ---
+prompt_resume() {
+  (( GLOBAL_COUNT == 0 )) && return
+
+  # non-interactive stdin → if no data, skip prompt
+  if [[ ! -t 0 ]]; then
+    if ! read -t 0; then
+      return
+    fi
+  fi
+
+  echo
+  echo -e "${DIM}────────────────────────────────────${RESET}"
+  echo -e "${BOLD}Pick a session to resume${RESET}  ${DIM}(# / UUID / prefix / Enter=quit)${RESET}"
+  echo -n "> "
+  read -r choice
+  [[ -z "$choice" ]] && { echo "Bye."; return; }
+
+  local sid=""
+  if is_uuid "$choice"; then
+    sid="$choice"
+  elif [[ "$choice" =~ ^[0-9]+$ ]] && (( choice >= 1 && choice <= GLOBAL_COUNT )); then
+    sid="${SESSION_IDS[$((choice-1))]}"
+  else
+    # partial UUID prefix match
+    local matches=()
+    for id in "${SESSION_IDS[@]}"; do
+      [[ "$id" == "$choice"* ]] && matches+=("$id")
+    done
+    if   ((${#matches[@]} == 1)); then sid="${matches[0]}"
+    elif ((${#matches[@]} > 1)); then echo -e "${YELLOW}multiple match, be more specific${RESET}"; prompt_resume; return
+    fi
+  fi
+
+  [[ -z "$sid" ]] && { echo -e "${RED}invalid${RESET}"; prompt_resume; return; }
+  echo
+  echo -e "${GREEN}Resuming:${RESET} ${BOLD}$sid${RESET}"
+  echo
+  exec claude --resume "$sid"
+}
+
+# --- usage ---
+usage() {
+  cat <<'HERE'
+Usage: claude-sessions [OPTIONS] [<filter>]
+
+Browse and resume Claude Code sessions interactively.
+
+Options:
+  --all        Show sessions from all projects (not just cwd)
+  --with-mem   Include memory-agent and internal sessions
+  --help, -h   This help
+
+Arguments:
+  <filter>     Substring filter against session label / project / UUID
+
+Examples:
+  claude-sessions          sessions for current directory
+  claude-sessions --all    all projects
+  claude-sessions --with-mem    include agent sessions
+  claude-sessions deploy   only sessions matching "deploy"
+HERE
+  exit 0
+}
+
+# ============================================================
+main() {
+  need jq
+  need claude
+
+  local mode="current" filter="" hide_noise="true"
+
+  for arg in "$@"; do
+    case "$arg" in
+      --help|-h)  usage ;;
+      --version|-V) echo "claude-sessions 1.0.0"; exit 0 ;;
+      --all)      mode="all" ;;
+      --with-mem) hide_noise="false" ;;
+      -*)         die "Unknown flag: $arg" ;;
+      *)          filter="$arg" ;;
+    esac
+  done
+
+  # header
+  if [[ "$mode" == "all" ]]; then
+    echo -e "${BOLD}${YELLOW}All Claude Code sessions${RESET}"
+    [[ "$hide_noise" == "true" ]] && echo -e "${DIM}(agent/memory sessions hidden — use --with-mem to show)${RESET}"
+    echo
+
+    while IFS= read -r base; do
+      while IFS= read -r -d '' d; do
+        list_dir "$d" "$filter" "true" "$hide_noise"
+      done < <(find "$base" -mindepth 1 -maxdepth 1 -type d -print0 2>/dev/null || true)
+    done < <(claude_project_dirs)
+  else
+    local cwd; cwd=$(pwd)
+    local proj_dir; proj_dir=$(find_project_dir "$cwd")
+
+    echo -e "${BOLD}${YELLOW}Claude Code sessions${RESET}  ${DIM}→ ${cwd}${RESET}"
+
+    if [[ -z "$proj_dir" ]]; then
+      echo -e "${DIM}No sessions for this directory.${RESET}"
+      echo -e "${DIM}Try ${BOLD}claude-sessions --all${DIM} to browse all projects.${RESET}"
+      exit 0
+    fi
+
+    echo
+    list_dir "$proj_dir" "$filter" "false" "$hide_noise"
+    (( GLOBAL_COUNT == 0 )) && echo -e "${DIM}(none)${RESET}"
+  fi
+
+  prompt_resume
+}
+
+main "$@"
