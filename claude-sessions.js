@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * claude-sessions — browse & resume Claude Code CLI sessions.
+ * csessions — browse & resume Claude Code CLI sessions.
  * Zero dependencies, works on Windows / macOS / Linux.
  */
 'use strict';
@@ -182,7 +182,7 @@ function main() {
   for (const a of args) {
     if (a === '--help' || a === '-h') {
       console.log(`
-Usage: claude-sessions [OPTIONS] [<filter>]
+Usage: csessions [OPTIONS] [<filter>]
 
 Browse and resume Claude Code sessions interactively.
 
@@ -196,14 +196,14 @@ Arguments:
   <filter>     Substring filter against session label / project / UUID
 
 Examples:
-  claude-sessions           sessions for current directory
-  claude-sessions --all     all projects
-  claude-sessions --with-mem    include agent sessions
-  claude-sessions deploy    only sessions matching "deploy"
+  csessions           sessions for current directory
+  csessions --all     all projects
+  csessions --with-mem    include agent sessions
+  csessions deploy    only sessions matching "deploy"
 `);
       process.exit(0);
     }
-    if (a === '--version') { console.log(`claude-sessions ${pkg?.version || '1.0.0'}`); process.exit(0); }
+    if (a === '--version') { console.log(`csessions ${pkg?.version || '1.0.0'}`); process.exit(0); }
     if (a === '--all') { all = true; continue; }
     if (a === '--with-mem') { hideNoise = false; continue; }
     if (a.startsWith('-')) die(`Unknown flag: ${a}`);
@@ -229,7 +229,7 @@ Examples:
     console.log(`${B(Y('Claude Code sessions'))}  ${D(`→ ${cwd}`)}`);
     if (!projDir) {
       console.log(D('No sessions for this directory.'));
-      console.log(`${D('Try ')}${B('claude-sessions --all')}${D(' to browse all projects.')}`);
+      console.log(`${D('Try ')}${B('csessions --all')}${D(' to browse all projects.')}`);
       process.exit(0);
     }
     console.log();

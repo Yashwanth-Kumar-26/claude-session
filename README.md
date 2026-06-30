@@ -14,15 +14,11 @@ sudo chmod +x /usr/local/bin/claude-sessions
 
 Dependencies: `bash` 4+, `jq`, `claude` CLI.
 
-### Any OS (Node.js 18+)
+### Any OS (Node.js 18+) — recommended
 
 ```bash
-# Install globally (package: csessions, command: claude-sessions)
 npm install -g csessions
-claude-sessions --all
-
-# Or run directly with npx (no install needed)
-npx github:Yashwanth-Kumar-26/claude-session
+csessions --all
 ```
 
 Zero dependencies — uses only Node.js built-in `fs`, `path`, `os`, `readline`.
@@ -45,24 +41,24 @@ Dependencies: `claude` CLI in PATH (no `jq` needed — uses native `ConvertFrom-
 
 ## Versions
 
-| File | Language | Platform | Deps |
-|------|----------|----------|------|
-| `claude-sessions` | Bash | Linux / macOS / WSL | `jq` |
-| `claude-sessions.ps1` | PowerShell | Windows | none (native) |
-| `claude-sessions.js` | Node.js | Windows / macOS / Linux | none (built-ins) |
+| Command | File | Platform | Deps |
+|---------|------|----------|------|
+| `csessions` (npm) | `claude-sessions.js` | Windows / macOS / Linux | none (built-ins) |
+| `claude-sessions` (bash) | `claude-sessions` | Linux / macOS / WSL | `jq` |
+| `.\claude-sessions.ps1` | `claude-sessions.ps1` | Windows | none (native) |
 
 All three share the same features, flags, and interactive picker.
 
 ## Usage
 
 ```
-claude-sessions                 sessions for current directory
-claude-sessions --all           all projects
-claude-sessions --with-mem      include memory-agent/internal sessions
-claude-sessions deploy          filter sessions matching "deploy"
+csessions                       sessions for current directory
+csessions --all                 all projects
+csessions --with-mem            include memory-agent/internal sessions
+csessions deploy                filter sessions matching "deploy"
 ```
 
-On Windows:
+On Windows (PowerShell):
 
 ```
 .\claude-sessions.ps1
@@ -71,26 +67,12 @@ On Windows:
 .\claude-sessions.ps1 -Filter deploy
 ```
 
-Node.js (any OS):
-
-```
-node claude-sessions.js
-node claude-sessions.js --all
-node claude-sessions.js --with-mem
-node claude-sessions.js deploy
-```
-
-Or via `npx` (no download needed):
-
-```
-npx github:Yashwanth-Kumar-26/claude-session
-```
-
 Pick a session by **number**, paste a **full UUID**, or type a **partial UUID prefix** (e.g. `07947d09` is enough). The tool runs `claude --resume <uuid>` and drops you right back into that session.
 
 ## What it looks like
 
 ```
+
   Claude Code sessions  → /home/siddu/MyProJects/X
 
   1  Give me Everything.md here in this folder including all what we discusse

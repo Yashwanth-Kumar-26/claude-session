@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "Browse and resume Claude Code CLI sessions — zero-dependency cross-platform CLI",
   "bin": {
-    "claude-sessions": "./claude-sessions.js"
+    "csessions": "./claude-sessions.js"
   },
   "files": [
     "claude-sessions",
