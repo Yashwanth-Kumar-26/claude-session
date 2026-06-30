@@ -1,10 +1,26 @@
-# claude-sessions
+# csessions
 
-Browse and resume [Claude Code](https://claude.ai/code) CLI sessions interactively from the terminal — with no setup, no GUI, just pick a number and go.
+Browse and resume [Claude Code](https://claude.ai/code) CLI sessions interactively — zero dependencies, works on Windows / macOS / Linux.
 
-## Installation
+```bash
+npm install -g csessions
+csessions --all
+```
 
-### Linux / macOS
+Pick a session by **number**, paste a **full UUID**, or type a **partial prefix** — it runs `claude --resume <id>` and drops you right back in.
+
+## Install
+
+### Recommended — npm (any OS)
+
+```bash
+npm install -g csessions
+csessions --all
+```
+
+Zero dependencies. Uses only Node.js built-in `fs`, `path`, `os`, `readline`.
+
+### Bash (Linux / macOS / WSL)
 
 ```bash
 sudo curl -L -o /usr/local/bin/claude-sessions \
@@ -12,42 +28,16 @@ sudo curl -L -o /usr/local/bin/claude-sessions \
 sudo chmod +x /usr/local/bin/claude-sessions
 ```
 
-Dependencies: `bash` 4+, `jq`, `claude` CLI.
+Requires `bash` 4+, `jq`.
 
-### Any OS (Node.js 18+) — recommended
-
-```bash
-npm install -g csessions
-csessions --all
-```
-
-Zero dependencies — uses only Node.js built-in `fs`, `path`, `os`, `readline`.
-
-### Windows (PowerShell 5.1+)
+### PowerShell (Windows)
 
 ```powershell
-# Option 1 — save to a project folder
 curl -LO https://raw.githubusercontent.com/Yashwanth-Kumar-26/claude-session/main/claude-sessions.ps1
-
-# Option 2 — install as a global command
-$dir = "$env:USERPROFILE\Documents\PowerShell\Scripts"
-md $dir -Force
-curl -Lo "$dir\claude-sessions.ps1" `
-  https://raw.githubusercontent.com/Yashwanth-Kumar-26/claude-session/main/claude-sessions.ps1
-# Then add $dir to your PATH or run: powershell -File "$dir\claude-sessions.ps1"
+.\claude-sessions.ps1 -All
 ```
 
-Dependencies: `claude` CLI in PATH (no `jq` needed — uses native `ConvertFrom-Json`).
-
-## Versions
-
-| Command | File | Platform | Deps |
-|---------|------|----------|------|
-| `csessions` (npm) | `claude-sessions.js` | Windows / macOS / Linux | none (built-ins) |
-| `claude-sessions` (bash) | `claude-sessions` | Linux / macOS / WSL | `jq` |
-| `.\claude-sessions.ps1` | `claude-sessions.ps1` | Windows | none (native) |
-
-All three share the same features, flags, and interactive picker.
+No extra deps — uses native `ConvertFrom-Json`.
 
 ## Usage
 
@@ -58,20 +48,10 @@ csessions --with-mem            include memory-agent/internal sessions
 csessions deploy                filter sessions matching "deploy"
 ```
 
-On Windows (PowerShell):
-
-```
-.\claude-sessions.ps1
-.\claude-sessions.ps1 -All
-.\claude-sessions.ps1 -All -WithMem
-.\claude-sessions.ps1 -Filter deploy
-```
-
-Pick a session by **number**, paste a **full UUID**, or type a **partial UUID prefix** (e.g. `07947d09` is enough). The tool runs `claude --resume <uuid>` and drops you right back into that session.
-
 ## What it looks like
 
 ```
+$ csessions
 
   Claude Code sessions  → /home/siddu/MyProJects/X
 
@@ -79,11 +59,18 @@ Pick a session by **number**, paste a **full UUID**, or type a **partial UUID pr
      fbe1abe4-0945-4516-9c90-ee32e83b16a4  •  11d
   2  /superpowers:brainstorming # PRD v1 — Social Platform for Builders (MVP)
      3265e913-87fd-4b97-8947-a66644136712  •  13d
+
+────────────────────────────────────
+Pick a session to resume  (# / UUID / prefix / Enter=quit):
+> 2
+Resuming: 3265e913-87fd-4b97-8947-a66644136712
 ```
 
 With `--all`:
 
 ```
+$ csessions --all
+
   All Claude Code sessions
   (agent/memory sessions hidden — use --with-mem to show)
 
@@ -95,19 +82,19 @@ With `--all`:
 
 ## Features
 
-- **Smart labels** — reads `sessions-index.json` first, falls back to extracting your first message from the session JSONL
-- **Multi-user** — finds sessions across `$HOME`, `/home/*`, `/root` (or `$env:USERPROFILE` on Windows)
-- **Noise filter** — hides `mem-observer`, `knowledge-agent`, and other internal sessions by default (`--with-mem` to show)
+- **Smart labels** — reads `sessions-index.json` first, falls back to extracting your first message from the session file
+- **Multi-user** — finds sessions across `$HOME`, `/home/*`, `/root` (or `%USERPROFILE%` on Windows)
+- **Noise filter** — hides `mem-observer`, `knowledge-agent` and other internal sessions by default (`--with-mem` to show)
 - **Partial UUID matching** — type just the first few characters of a session ID
 - **Non-interactive safe** — when piped, lists sessions and exits without prompting
 - **Case-preserving encoding** — matches Claude Code's actual folder naming exactly
 
 ## How it works
 
-Claude Code stores sessions as JSONL files:
-- Linux: `~/.claude/projects/<encoded-path>/<uuid>.jsonl`
-- Windows: `%USERPROFILE%\.claude\projects\<encoded-path>\<uuid>.jsonl`
+Claude Code stores sessions as JSONL files at `~/.claude/projects/<encoded-path>/<uuid>.jsonl`. The `<encoded-path>` is your working directory with non-alphanumeric chars replaced by `-` (case preserved). The tool reads `sessions-index.json` for labels, and falls back to extracting the first user prompt from the session file directly.
 
-The `<encoded-path>` is your working directory with non-alphanumeric characters replaced by `-` (case is preserved). The script scans the right directories, reads `sessions-index.json` for labels, and if there's no index yet it extracts your first user message directly from the session file.
+## npm
 
-Run `--help` for full options.
+```
+https://www.npmjs.com/package/csessions
+```
