@@ -1,9 +1,9 @@
 {
   "name": "csessions",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Browse and resume Claude Code CLI sessions — zero-dependency cross-platform CLI",
   "bin": {
-    "csessions": "./claude-sessions.js"
+    "csessions": "claude-sessions.js"
   },
   "files": [
     "claude-sessions",
@@ -17,6 +17,6 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/Yashwanth-Kumar-26/claude-session"
+    "url": "git+https://github.com/Yashwanth-Kumar-26/claude-session.git"
   }
 }
