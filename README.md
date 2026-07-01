@@ -180,4 +180,10 @@ claude --resume <session-id>
 
 ---
 
+## License
+
+This project is licensed under the [MIT License](LICENSE).
+
+---
+
 Made for people who use **Claude Code** every day and want to jump back into any conversation in seconds.
