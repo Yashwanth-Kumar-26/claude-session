@@ -1,103 +1,183 @@
 # csessions
 
-Browse and resume [Claude Code](https://claude.ai/code) CLI sessions interactively — zero dependencies, works on Windows / macOS / Linux.
+> Browse and resume **Claude Code CLI** sessions interactively.
+> **Zero dependencies. Cross-platform. Fast.**
+
+[![npm version](https://img.shields.io/npm/v/csessions)](https://www.npmjs.com/package/csessions)
+[![npm downloads](https://img.shields.io/npm/dm/csessions)](https://www.npmjs.com/package/csessions)
+[![License](https://img.shields.io/github/license/Yashwanth-Kumar-26/claude-session)](https://github.com/Yashwanth-Kumar-26/claude-session)
+
+## Features
+
+* Browse Claude Code sessions interactively
+* Resume any session instantly
+* Falls back to the first user prompt when no title exists
+* Hides internal memory/agent sessions by default
+* Works on **Windows**, **macOS**, and **Linux**
+* Zero runtime dependencies (Node.js built-ins only)
+
+---
+
+## Installation
+
+### npm (Recommended)
 
 ```bash
 npm install -g csessions
+```
+
+Resume sessions for the current project:
+
+```bash
+csessions
+```
+
+Show sessions from every project:
+
+```bash
 csessions --all
 ```
 
-Pick a session by **number**, paste a **full UUID**, or type a **partial prefix** — it runs `claude --resume <id>` and drops you right back in.
-
-## Install
-
-### Recommended — npm (any OS)
-
-```bash
-npm install -g csessions
-csessions #(for current dir)
-```
-```bash
-csessions --all #(for all sessions) 
-```
-
-Zero dependencies. Uses only Node.js built-in `fs`, `path`, `os`, `readline`.
+---
 
 ### Bash (Linux / macOS / WSL)
 
 ```bash
-sudo curl -L -o /usr/local/bin/claude-sessions \
+sudo curl -L \
+  -o /usr/local/bin/claude-sessions \
   https://raw.githubusercontent.com/Yashwanth-Kumar-26/claude-session/main/claude-sessions
+
 sudo chmod +x /usr/local/bin/claude-sessions
 ```
 
-Requires `bash` 4+, `jq`.
+**Requirements**
+
+* Bash 4+
+* jq
+
+---
 
 ### PowerShell (Windows)
 
 ```powershell
 curl -LO https://raw.githubusercontent.com/Yashwanth-Kumar-26/claude-session/main/claude-sessions.ps1
+
 .\claude-sessions.ps1 -All
 ```
 
-No extra deps — uses native `ConvertFrom-Json`.
+No additional dependencies required.
+
+---
 
 ## Usage
 
-```
-csessions                       sessions for current directory
-csessions --all                 all projects
-csessions --with-mem            include memory-agent/internal sessions
-csessions deploy                filter sessions matching "deploy"
+```bash
+csessions
 ```
 
-## What it looks like
+Browse sessions for the current directory.
 
+```bash
+csessions --all
 ```
+
+Browse sessions across all projects.
+
+```bash
+csessions --with-mem
+```
+
+Include internal memory/agent sessions.
+
+```bash
+csessions deploy
+```
+
+Filter sessions containing **"deploy"**.
+
+---
+
+## Example
+
+```text
 $ csessions
 
-  Claude Code sessions  → /home/siddu/MyProJects/X
+  Claude Code sessions → /home/user/project
 
-  1  Give me Everything.md here in this folder including all what we discusse
-     fbe1abe4-0945-4516-9c90-ee32e83b16a4  •  11d
-  2  /superpowers:brainstorming # PRD v1 — Social Platform for Builders (MVP)
-     3265e913-87fd-4b97-8947-a66644136712  •  13d
+  1  Give me Everything.md here in this folder...
+     fbe1abe4-0945-4516-9c90-ee32e83b16a4 • 11d
 
-────────────────────────────────────
-Pick a session to resume  (# / UUID / prefix / Enter=quit):
+  2  PRD v1 — Social for Builders
+     3265e913-87fd-4b97-8947-a66644136712 • 13d
+
+──────────────────────────────────────────
+
+Pick a session (# / UUID / prefix / Enter = quit):
 > 2
+
 Resuming: 3265e913-87fd-4b97-8947-a66644136712
 ```
 
-With `--all`:
+---
 
-```
-$ csessions --all
+## How It Works
 
-  All Claude Code sessions
-  (agent/memory sessions hidden — use --with-mem to show)
+Claude Code stores conversations as JSONL files under:
 
-  1  /skill-writer for this project…                  [-home-siddu-MyProJects-TeleRiHa]
-     8dd00428-5819-4c8a-9ce2-02c4aade4369  •  15d
-  2  fix the setup script                              [-home-siddu-claudefree]
-     38d0f926-d762-4731-8785-de1d4e7247fe  •  9d
+```text
+~/.claude/projects/<encoded-path>/<uuid>.jsonl
 ```
 
-## Features
+`csessions`:
 
-- **Smart labels** — reads `sessions-index.json` first, falls back to extracting your first message from the session file
-- **Multi-user** — finds sessions across `$HOME`, `/home/*`, `/root` (or `%USERPROFILE%` on Windows)
-- **Noise filter** — hides `mem-observer`, `knowledge-agent` and other internal sessions by default (`--with-mem` to show)
-- **Partial UUID matching** — type just the first few characters of a session ID
-- **Non-interactive safe** — when piped, lists sessions and exits without prompting
-- **Case-preserving encoding** — matches Claude Code's actual folder naming exactly
+1. Finds available sessions.
+2. Reads `sessions-index.json` for labels.
+3. Falls back to the first user message when necessary.
+4. Lets you select a session interactively.
+5. Runs:
 
-## How it works
-
-Claude Code stores sessions as JSONL files at `~/.claude/projects/<encoded-path>/<uuid>.jsonl`. The `<encoded-path>` is your working directory with non-alphanumeric chars replaced by `-` (case preserved). The tool reads `sessions-index.json` for labels, and falls back to extracting the first user prompt from the session file directly.
-
-## npm
-
+```bash
+claude --resume <session-id>
 ```
-https://www.npmjs.com/package/csessions
-```
+
+---
+
+## Smart Features
+
+* **Interactive session picker**
+* **Partial UUID matching**
+* **Session title extraction**
+* **Current-project or all-project browsing**
+* **Automatic filtering of internal Claude sessions**
+* **Safe non-interactive mode** (lists sessions without prompting)
+* **Case-preserving path encoding** matching Claude Code
+
+---
+
+## Requirements
+
+### npm version
+
+* Node.js 18+
+* No external dependencies
+
+### Bash version
+
+* Bash 4+
+* jq
+
+### PowerShell version
+
+* PowerShell 5+
+* Native `ConvertFrom-Json`
+
+---
+
+## Links
+
+* **npm:** https://www.npmjs.com/package/csessions
+* **GitHub:** https://github.com/Yashwanth-Kumar-26/claude-session
+
+---
+
+Made for people who use **Claude Code** every day and want to jump back into any conversation in seconds.
