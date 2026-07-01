@@ -15,7 +15,10 @@ Pick a session by **number**, paste a **full UUID**, or type a **partial prefix*
 
 ```bash
 npm install -g csessions
-csessions --all
+csessions #(for current dir)
+```
+```bash
+csessions --all #(for all sessions) 
 ```
 
 Zero dependencies. Uses only Node.js built-in `fs`, `path`, `os`, `readline`.
