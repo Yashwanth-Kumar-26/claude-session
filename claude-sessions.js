@@ -111,7 +111,8 @@ function getLabel(fp, sid, idx) {
 // ── Noise filter ──────────────────────────────────────────────────
 const IS_RE = /mem-observer|mem_observer|memory-observer|memory_observer/i;
 const IL_RE = /^(You are a Claude-Mem|Hello memory agent|claude-mem|knowledge-agent)/i;
-const isNoise = (proj, label) => IS_RE.test(proj) || IL_RE.test(label);
+const AUTO_RE = /^Analyze (this codebase for (security vulnerabilities|performance optimizations)|test coverage and identify gaps)/i;
+const isNoise = (proj, label) => IS_RE.test(proj) || IL_RE.test(label) || AUTO_RE.test(label);
 
 const timeAgo = ms => {
   const d = Math.floor((Date.now() - ms) / 1000);
@@ -187,19 +188,19 @@ Usage: csessions [OPTIONS] [<filter>]
 Browse and resume Claude Code sessions interactively.
 
 Options:
-  --all        Show sessions from all projects (not just cwd)
-  --with-mem   Include memory-agent and internal sessions
-  --help, -h   This help
-  --version    Show version
+  --all            Show sessions from all projects (not just cwd)
+  --with-mem       Include auto-generated, memory-agent, and internal sessions
+  --help, -h       This help
+  --version        Show version
 
 Arguments:
   <filter>     Substring filter against session label / project / UUID
 
 Examples:
-  csessions           sessions for current directory
-  csessions --all     all projects
-  csessions --with-mem    include agent sessions
-  csessions deploy    only sessions matching "deploy"
+  csessions              sessions for current directory (auto-generated hidden)
+  csessions --all        all projects
+  csessions --with-mem   include auto-generated + agent sessions
+  csessions deploy       only sessions matching "deploy"
 `);
       process.exit(0);
     }
@@ -213,7 +214,7 @@ Examples:
   let sessions;
   if (all) {
     console.log(`${B(Y('All Claude Code sessions'))}`);
-    if (hideNoise) console.log(D('(agent/memory sessions hidden — use --with-mem to show)'));
+    if (hideNoise) console.log(D('(auto-generated / agent sessions hidden — use --with-mem to show)'));
     console.log();
     sessions = BASES.flatMap(base => {
       let dirs;
